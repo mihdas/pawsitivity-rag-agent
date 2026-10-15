@@ -1,0 +1,43 @@
+# Guardrail settings for the website assistant.
+# Edit the texts below. No code changes needed; restart the API after editing.
+
+site_name: "Coexist with Pawsitivity"
+assistant_name: "Pawsitivity Assistant"
+
+# Used by the topic check. Describe what visitors may ask about.
+# Be concrete: the more precise this is, the better unrelated questions get filtered.
+scope_description: >
+  Questions about the website coexistwithpawsitivity.com and the topics it covers:
+  the project and the people behind it, living together with animals and pets,
+  animal welfare, the services, events, offers, contact details and anything else
+  described in the knowledge base provided by the site owner.
+
+# Answer for questions that are clearly unrelated (homework, coding, politics, other websites ...)
+refusal_message: >
+  I can only help with questions about Coexist with Pawsitivity and the topics on this website.
+  Is there something about our work or living with animals I can help you with?
+
+# Answer when the question is on topic but the knowledge base has nothing on it
+no_answer_message: >
+  I could not find information about that on our website. Please reach out to us directly
+  via the contact page and we will be happy to help.
+
+# Answer when the input looks like an attempt to manipulate the assistant
+blocked_message: >
+  Sorry, I can't help with that request. Feel free to ask me anything about Coexist with Pawsitivity.
+
+greeting_message: >
+  Hi! I'm the Pawsitivity Assistant. Ask me anything about Coexist with Pawsitivity.
+
+# Cheap first filter for prompt-injection attempts (case-insensitive regular expressions).
+injection_patterns:
+  - "ignore (all |any )?(previous|prior|above) (instructions|prompts|rules)"
+  - "disregard (all |any )?(previous|prior|above)"
+  - "(reveal|show|print|repeat) (me )?(your|the) (system )?(prompt|instructions)"
+  - "you are now (a|an|in) "
+  - "pretend (to be|you are)"
+  - "jailbreak"
+  - "developer mode"
+
+# Words or phrases that are never answered (case-insensitive substring match). Optional.
+blocked_terms: []

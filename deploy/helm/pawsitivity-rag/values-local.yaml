@@ -1,0 +1,9 @@
+# Local practice cluster (kind): image built locally, no ingress, use port-forward.
+image:
+  repository: pawsitivity-rag
+  tag: dev
+  pullPolicy: Never
+ingress:
+  enabled: false
+config:
+  ALLOWED_ORIGINS: http://localhost:8080

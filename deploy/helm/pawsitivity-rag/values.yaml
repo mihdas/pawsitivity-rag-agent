@@ -1,0 +1,69 @@
+image:
+  repository: ghcr.io/YOUR_GITHUB_USER/pawsitivity-rag   # set by CI
+  tag: latest
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+replicaCount: 1
+
+# Deployment strategy. Default: rolling update, new pod first. values-small.yaml stops the old pod first.
+strategy: {}
+
+startupProbe:
+  failureThreshold: 24        # x 5 s = 2 min until the API must be up
+
+# Any changing value forces new pods (used locally, where the image tag stays `dev`)
+podRestart: ""
+
+# Non-secret settings -> ConfigMap -> environment variables of the API
+config:
+  LLM_MODEL: claude-haiku-5-5
+  COLLECTION: pawsitivity_kb
+  TOP_K: "4"
+  MIN_RELEVANCE: "0.35"
+  ALLOWED_ORIGINS: https://coexistwithpawsitivity.com,https://www.coexistwithpawsitivity.com
+  RATE_LIMIT: 20/minute
+  # QDRANT_URL is filled in automatically when the bundled Qdrant is used
+
+secrets:
+  # Recommended: create the secret yourself once and reference it here, so the key never goes through CI:
+  #   kubectl -n pawsitivity create secret generic pawsitivity-llm --from-literal=ANTHROPIC_API_KEY=sk-ant-...
+  existingSecret: ""
+  anthropicApiKey: ""          # only used when existingSecret is empty
+
+resources:
+  requests: { cpu: 100m, memory: 512Mi }
+  limits: { memory: 1Gi }
+
+service:
+  port: 8000
+
+ingress:
+  enabled: true
+  className: traefik           # k3s ships with Traefik
+  host: chat.coexistwithpawsitivity.com
+  clusterIssuer: letsencrypt-prod
+  annotations: {}
+
+# Rebuild the knowledge index after every install/upgrade (content is baked into the image)
+ingestJob:
+  enabled: true
+
+networkPolicy:
+  enabled: true                # only the API may talk to Qdrant
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+# Bundled Qdrant (official chart). Set enabled=false and config.QDRANT_URL to use Qdrant Cloud instead.
+qdrant:
+  enabled: true
+  replicaCount: 1
+  persistence:
+    size: 2Gi
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    limits: { memory: 768Mi }

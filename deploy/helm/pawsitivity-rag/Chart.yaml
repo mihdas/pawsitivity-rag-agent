@@ -1,0 +1,11 @@
+apiVersion: v2
+name: pawsitivity-rag
+description: RAG website assistant for coexistwithpawsitivity.com (FastAPI + LangGraph + Claude + Qdrant)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: qdrant
+    version: 1.19.0
+    repository: https://qdrant.github.io/qdrant-helm
+    condition: qdrant.enabled

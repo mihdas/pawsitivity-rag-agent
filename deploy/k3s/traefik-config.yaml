@@ -1,0 +1,12 @@
+# k3s picks this up automatically (server/manifests). It makes Traefik see the visitor's real IP address,
+# which the API needs for per-visitor rate limiting.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    service:
+      spec:
+        externalTrafficPolicy: Local

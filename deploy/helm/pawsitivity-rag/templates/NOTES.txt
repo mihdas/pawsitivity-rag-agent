@@ -1,0 +1,17 @@
+Pawsitivity RAG agent deployed (release {{ .Release.Name }}, namespace {{ .Release.Namespace }}).
+
+Check it:
+  kubectl -n {{ .Release.Namespace }} get pods,jobs,svc
+  kubectl -n {{ .Release.Namespace }} logs job/{{ include "paws.fullname" . }}-ingest     # how many chunks were indexed
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+{{- if .Values.ingress.enabled }}
+
+API + widget:  https://{{ .Values.ingress.host }}
+Embed on the website:
+  <script src="https://{{ .Values.ingress.host }}/widget.js" defer></script>
+{{- else }}
+
+Open it locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "paws.fullname" . }} 8000:{{ .Values.service.port }}
+  curl http://localhost:8000/healthz
+{{- end }}

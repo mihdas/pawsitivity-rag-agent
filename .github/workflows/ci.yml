@@ -1,0 +1,79 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: ruff check app scripts tests
+      - run: pytest -q
+      - uses: azure/setup-helm@v4
+      - run: |
+          helm dependency update deploy/helm/pawsitivity-rag
+          helm lint deploy/helm/pawsitivity-rag --set secrets.existingSecret=x
+          helm template t deploy/helm/pawsitivity-rag --set secrets.existingSecret=x > /dev/null
+          helm template t deploy/helm/pawsitivity-rag -f deploy/helm/pawsitivity-rag/values-prod.yaml > /dev/null
+          helm template t deploy/helm/pawsitivity-rag -f deploy/helm/pawsitivity-rag/values-prod.yaml -f deploy/helm/pawsitivity-rag/values-small.yaml > /dev/null
+
+  image:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image name (GHCR needs lowercase)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pawsitivity-rag" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }},${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    # Deploys over SSH as user "deploy" (the Kubernetes API is not exposed to the internet).
+    # Repository secrets: DEPLOY_HOST (server IP), DEPLOY_SSH_KEY (private key), DEPLOY_KNOWN_HOSTS (ssh-keyscan output)
+    needs: image
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image name (GHCR needs lowercase)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pawsitivity-rag" >> "$GITHUB_ENV"
+      - name: Skip when no server is configured yet
+        if: env.DEPLOY_HOST == ''
+        run: echo "Add the DEPLOY_HOST, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS secrets to enable automatic deployment."
+      - name: Set up SSH
+        if: env.DEPLOY_HOST != ''
+        run: |
+          install -d -m 700 ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Deploy
+        if: env.DEPLOY_HOST != ''
+        run: make deploy-prod HOST="$DEPLOY_HOST" IMAGE="${{ env.IMAGE }}" TAG="${{ github.sha }}"
+      - name: Smoke test from the internet
+        if: env.DEPLOY_HOST != ''
+        run: make verify-public

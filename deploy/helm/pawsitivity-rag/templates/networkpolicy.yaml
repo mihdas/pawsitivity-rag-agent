@@ -1,0 +1,26 @@
+{{- if and .Values.networkPolicy.enabled .Values.qdrant.enabled }}
+# Qdrant has no authentication enabled inside the cluster, so only our API and ingest pods may reach it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "paws.fullname" . }}-qdrant
+  labels: {{- include "paws.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: qdrant
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {{- include "paws.selector" . | nindent 14 }}
+      ports:
+        - { port: 6333, protocol: TCP }
+        - { port: 6334, protocol: TCP }
+    - from:                       # Qdrant peers (only relevant when running a Qdrant cluster)
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: qdrant
+              app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

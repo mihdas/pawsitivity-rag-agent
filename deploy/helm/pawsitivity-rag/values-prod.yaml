@@ -1,0 +1,15 @@
+# Production on the k3s server. image.repository and image.tag are passed by deploy.sh.
+image:
+  pullPolicy: Always
+
+secrets:
+  existingSecret: pawsitivity-llm     # created by deploy/k3s/bootstrap.sh
+
+config:
+  ALLOWED_ORIGINS: https://coexistwithpawsitivity.com,https://www.coexistwithpawsitivity.com
+
+ingress:
+  enabled: true
+  className: traefik
+  host: chat.coexistwithpawsitivity.com
+  clusterIssuer: letsencrypt-prod

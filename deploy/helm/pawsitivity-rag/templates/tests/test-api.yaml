@@ -1,0 +1,22 @@
+# `helm test <release> -n <namespace>` runs this pod: it checks that the API answers and that the widget is served.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "paws.fullname" . }}-test
+  labels: {{- include "paws.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  restartPolicy: Never
+  containers:
+    - name: check
+      image: busybox:1.36
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -e
+          base=http://{{ include "paws.fullname" . }}:{{ .Values.service.port }}
+          wget -qO- $base/healthz | grep -q '"ok":true'
+          wget -qO- $base/widget.js | grep -q attachShadow
+          echo "API and widget OK"

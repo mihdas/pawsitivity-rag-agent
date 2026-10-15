@@ -1,0 +1,19 @@
+[project]
+name = "pawsitivity-rag-agent"
+version = "0.1.0"
+description = "RAG website assistant with guardrails for coexistwithpawsitivity.com"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S101", "S311"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
