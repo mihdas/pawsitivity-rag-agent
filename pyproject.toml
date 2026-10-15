@@ -17,3 +17,4 @@ ignore = ["S101", "S311"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]   # lets tests import app/ and scripts/ when run as plain `pytest`
